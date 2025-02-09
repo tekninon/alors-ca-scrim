@@ -179,9 +179,12 @@ exports.recordTournamentScores = async (req, res) => {
       if (team) {
         team.score = score; // Mise à jour du score de l'équipe
 
-        // Mise à jour du score de chaque joueur dans la base de données
+        // Diviser le score de l'équipe par le nombre de joueurs
+        const playerScore = score / team.players.length;
+
+        // Mise à jour du score de chaque joueur
         for (const player of team.players) {
-          await Player.findByIdAndUpdate(player._id, { $inc: { score } });
+          await Player.findByIdAndUpdate(player._id, { $inc: { score: playerScore } });
         }
       }
     }
@@ -193,6 +196,7 @@ exports.recordTournamentScores = async (req, res) => {
     res.status(500).json({ message: "Erreur lors de l'enregistrement des scores.", error });
   }
 };
+
 
 exports.updateTournamentTeams = async (req, res) => {
   try {
@@ -244,5 +248,25 @@ exports.finishTournament = async (req, res) => {
   } catch (error) {
     console.error("Erreur lors de la clôture du tournoi :", error);
     res.status(500).json({ message: "Erreur lors de la clôture du tournoi.", error });
+  }
+};
+
+
+// Récupérer les tournois par jeu
+exports.getTournamentsByGame = async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const tournaments = await Tournament.find({ gameId })
+      .populate("gameId", "name")
+      .populate("teams.players", "name tier");
+
+    if (!tournaments.length) {
+      return res.status(404).json({ message: "Aucun tournoi trouvé pour ce jeu." });
+    }
+
+    res.status(200).json(tournaments);
+  } catch (error) {
+    console.error("Erreur lors de la récupération des tournois par jeu :", error);
+    res.status(500).json({ message: "Erreur lors de la récupération des tournois par jeu", error });
   }
 };

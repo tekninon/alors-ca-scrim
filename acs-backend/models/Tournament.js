@@ -3,8 +3,10 @@ const mongoose = require("mongoose");
 
 const TeamSchema = new mongoose.Schema({
   teamNumber: { type: Number, required: true },
-  players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
+  players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }],
+  score: { type: Number, default: 0 }  // Ajout du score de l'équipe
 });
+
 
 const TournamentSchema = new mongoose.Schema({
   name: { type: String, required: true },

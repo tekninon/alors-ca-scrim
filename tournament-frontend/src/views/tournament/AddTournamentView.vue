@@ -175,9 +175,15 @@ async function fetchAvailablePlayersForUpdate() {
     availablePlayersForUpdate.value = [];
     return;
   }
+
   try {
     const playersRes = await axios.get(`http://localhost:5000/api/players/by-game/${updatedGameId.value}`);
     availablePlayersForUpdate.value = playersRes.data;
+
+    // Pré-sélectionner les joueurs déjà inscrits
+    updatedPlayers.value = updatedPlayers.value.filter((playerId) =>
+      availablePlayersForUpdate.value.some((player) => player._id.toString() === playerId)
+    );
   } catch (error) {
     showMessage("Erreur lors du chargement des joueurs.", false);
   }
@@ -246,13 +252,18 @@ async function fetchTournamentDetails() {
     // Mise à jour des champs pour le formulaire
     updatedName.value = res.data.name;
     updatedGameId.value = res.data.gameId?._id || "";
-    updatedPlayers.value = res.data.players?.map((player) => player.toString()) || [];
+
+    // Récupérer les joueurs déjà inscrits dans le tournoi
+    updatedPlayers.value = res.data.players?.map((player) => player._id.toString()) || [];
+
+    // Récupérer les joueurs disponibles pour la mise à jour
     await fetchAvailablePlayersForUpdate();
   } catch (error) {
     console.error("Erreur lors de la récupération des détails du tournoi :", error);
     showMessage("Erreur lors du chargement du tournoi.", false);
   }
 }
+
 
 
 // Modifier un tournoi

@@ -16,5 +16,5 @@ router.post("/generate-teams/:tournamentId", tournamentController.generateTeams)
 router.post("/record-scores", tournamentController.recordTournamentScores);
 router.post("/update-teams/:tournamentId", tournamentController.updateTournamentTeams);
 router.post("/finish/:tournamentId", tournamentController.finishTournament);
-
+router.get("/by-game/:gameId", tournamentController.getTournamentsByGame);
 module.exports = router;
