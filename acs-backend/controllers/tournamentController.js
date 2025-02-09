@@ -12,6 +12,25 @@ exports.createTournament = async (req, res) => {
   }
 };
 
+exports.getTournamentById = async (req, res) => {
+  try {
+    const { tournamentId } = req.params;
+    const tournament = await Tournament.findById(tournamentId)
+      .populate("gameId", "name") // Récupère les infos du jeu
+      .populate("players", "name tier"); // Récupère les infos des joueurs
+
+    if (!tournament) {
+      return res.status(404).json({ message: "Tournoi introuvable" });
+    }
+
+    res.status(200).json(tournament);
+  } catch (error) {
+    console.error("Erreur lors de la récupération du tournoi :", error);
+    res.status(500).json({ message: "Erreur lors de la récupération du tournoi", error });
+  }
+};
+
+
 exports.getAllTournaments = async (req, res) => {
   try {
     const tournaments = await Tournament.find()
@@ -88,3 +107,61 @@ exports.generateTeams = async (req, res) => {
     res.status(500).json({ message: "Erreur lors de la génération des équipes", error });
   }
 };
+
+exports.updateTournament = async (req, res) => {
+  const { tournamentId } = req.params;
+  const { name, gameId, playerIds } = req.body;
+
+  try {
+    const updatedTournament = await Tournament.findByIdAndUpdate(
+      tournamentId,
+      {
+        name,
+        gameId,
+        players: playerIds,
+      },
+      { new: true, runValidators: true }
+    ).populate("gameId", "name").populate("players", "name tier");
+
+    if (!updatedTournament) {
+      return res.status(404).json({ message: "Tournoi introuvable." });
+    }
+
+    res.status(200).json({ message: "Tournoi mis à jour avec succès.", tournament: updatedTournament });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du tournoi :", error);
+    res.status(500).json({ message: "Erreur lors de la mise à jour du tournoi.", error });
+  }
+};
+
+exports.deleteTournament = async (req, res) => {
+  try {
+    const { tournamentId } = req.params;
+
+    const deletedTournament = await Tournament.findByIdAndDelete(tournamentId);
+
+    if (!deletedTournament) {
+      return res.status(404).json({ message: "Tournoi introuvable." });
+    }
+
+    res.status(200).json({ message: "Tournoi supprimé avec succès.", tournament: deletedTournament });
+  } catch (error) {
+    console.error("Erreur lors de la suppression du tournoi :", error);
+    res.status(500).json({ message: "Erreur lors de la suppression du tournoi.", error });
+  }
+};
+
+
+exports.getFinishedTournaments = async (req, res) => {
+  try {
+    const finishedTournaments = await Tournament.find({ isFinished: true })
+      .populate("gameId", "name")
+      .populate("teams.players", "name tier");
+
+    res.status(200).json(finishedTournaments);
+  } catch (error) {
+    console.error("Erreur lors de la récupération des tournois terminés :", error);
+    res.status(500).json({ message: "Erreur lors de la récupération des tournois terminés.", error });
+  }
+};
+

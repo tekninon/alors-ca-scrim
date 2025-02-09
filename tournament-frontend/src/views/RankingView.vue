@@ -72,8 +72,8 @@
             <td>{{ tournament.name }}</td>
             <td>{{ tournament.gameId?.name }}</td>
             <td>
-              <span v-if="tournament.winningTeam">
-                {{ tournament.winningTeam.players.map(player => player.name).join(", ") }}
+              <span v-if="getWinningTeam(tournament)">
+                {{ getWinningTeam(tournament).players.map(player => player.name).join(", ") }}
               </span>
               <span v-else>Aucune équipe gagnante</span>
             </td>
@@ -113,10 +113,19 @@ onMounted(async () => {
     // Récupère la liste des tournois terminés
     const tournamentsRes = await axios.get('http://localhost:5000/api/tournaments/finished')
     finishedTournaments.value = tournamentsRes.data
+    console.log(tournamentsRes.data);
   } catch (error) {
     console.error('Erreur lors de la récupération des classements :', error)
   }
 })
+
+const getWinningTeam = (tournament) => {
+  if (!tournament.winnerTeamNumber || !tournament.teams) return null;
+  
+  // Recherche l'équipe dont le numéro correspond à `winnerTeamNumber`
+  return tournament.teams.find(team => team.teamNumber === tournament.winnerTeamNumber);
+};
+
 
 // Tri et filtrage des joueurs
 const sortedAndFilteredPlayers = computed(() => {

@@ -242,14 +242,18 @@ async function fetchTournamentDetails() {
   try {
     const res = await axios.get(`http://localhost:5000/api/tournaments/${selectedTournamentId.value}`);
     selectedTournament.value = res.data;
+
+    // Mise à jour des champs pour le formulaire
     updatedName.value = res.data.name;
     updatedGameId.value = res.data.gameId?._id || "";
-    updatedPlayers.value = res.data.players.map((player) => player.toString());
-    fetchAvailablePlayersForUpdate();
+    updatedPlayers.value = res.data.players?.map((player) => player.toString()) || [];
+    await fetchAvailablePlayersForUpdate();
   } catch (error) {
+    console.error("Erreur lors de la récupération des détails du tournoi :", error);
     showMessage("Erreur lors du chargement du tournoi.", false);
   }
 }
+
 
 // Modifier un tournoi
 async function handleUpdate() {
@@ -262,6 +266,7 @@ async function handleUpdate() {
       gameId: updatedGameId.value,
       playerIds: updatedPlayers.value,
     });
+
     showMessage("Tournoi modifié avec succès !", true);
     selectedTournamentId.value = "";
     selectedTournament.value = null;
@@ -271,11 +276,13 @@ async function handleUpdate() {
     selectAllUpdate.value = false;
     fetchTournaments();
   } catch (error) {
+    console.error("Erreur lors de la modification du tournoi :", error);
     showMessage("Erreur lors de la modification du tournoi.", false);
   } finally {
     isLoadingUpdate.value = false;
   }
 }
+
 
 // Rafraîchir la liste des tournois
 async function fetchTournaments() {
