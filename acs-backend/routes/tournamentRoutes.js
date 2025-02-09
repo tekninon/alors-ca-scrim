@@ -13,5 +13,8 @@ router.put("/update/:tournamentId", tournamentController.updateTournament);
 router.delete("/delete/:tournamentId", tournamentController.deleteTournament);
 router.post("/register-players/:tournamentId", tournamentController.registerPlayers);
 router.post("/generate-teams/:tournamentId", tournamentController.generateTeams);
+router.post("/record-scores", tournamentController.recordTournamentScores);
+router.post("/update-teams/:tournamentId", tournamentController.updateTournamentTeams);
+router.post("/finish/:tournamentId", tournamentController.finishTournament);
 
 module.exports = router;

@@ -28,5 +28,8 @@ router.get("/ranking", playerController.getRanking);
 
 router.delete("/:playerId", playerController.deletePlayer);
 
+router.post("/update-score", playerController.updatePlayerScore);
+// Récupérer un joueur par ID
+router.get("/:playerId", playerController.getPlayerById);
 
 module.exports = router;

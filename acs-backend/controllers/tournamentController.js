@@ -165,3 +165,84 @@ exports.getFinishedTournaments = async (req, res) => {
   }
 };
 
+exports.recordTournamentScores = async (req, res) => {
+  try {
+    const { tournamentId, teamScores } = req.body;
+
+    // Récupérer le tournoi
+    const tournament = await Tournament.findById(tournamentId).populate("teams.players");
+    if (!tournament) return res.status(404).json({ message: "Tournoi introuvable" });
+
+    // Mise à jour des scores des équipes et des joueurs
+    for (const { teamNumber, score } of teamScores) {
+      const team = tournament.teams.find(t => t.teamNumber === teamNumber);
+      if (team) {
+        team.score = score; // Mise à jour du score de l'équipe
+
+        // Mise à jour du score de chaque joueur dans la base de données
+        for (const player of team.players) {
+          await Player.findByIdAndUpdate(player._id, { $inc: { score } });
+        }
+      }
+    }
+
+    await tournament.save();
+    res.status(200).json({ message: "Scores enregistrés avec succès.", tournament });
+  } catch (error) {
+    console.error("Erreur lors de l'enregistrement des scores :", error);
+    res.status(500).json({ message: "Erreur lors de l'enregistrement des scores.", error });
+  }
+};
+
+exports.updateTournamentTeams = async (req, res) => {
+  try {
+    const { tournamentId } = req.params;
+    const { teams } = req.body;
+
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) {
+      return res.status(404).json({ message: "Tournoi introuvable" });
+    }
+
+    // Mettre à jour les équipes
+    tournament.teams = teams;
+
+    await tournament.save();
+    res.status(200).json({ message: "Composition des équipes mise à jour avec succès.", tournament });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des équipes :", error);
+    res.status(500).json({ message: "Erreur lors de la mise à jour des équipes.", error });
+  }
+};
+
+exports.finishTournament = async (req, res) => {
+  try {
+    const { tournamentId } = req.params;
+    const { winnerTeamNumber } = req.body;
+
+    // Vérifier que le tournoi existe
+    const tournament = await Tournament.findById(tournamentId).populate("teams.players");
+    if (!tournament) return res.status(404).json({ message: "Tournoi introuvable" });
+
+    // Vérifier que l'équipe gagnante existe
+    const winningTeam = tournament.teams.find(team => team.teamNumber === winnerTeamNumber);
+    if (!winningTeam) {
+      return res.status(400).json({ message: "L'équipe gagnante spécifiée est invalide." });
+    }
+
+    // Marquer le tournoi comme terminé et enregistrer l'équipe gagnante
+    tournament.isFinished = true;
+    tournament.winnerTeamNumber = winnerTeamNumber;
+
+    // Augmenter le score des joueurs de l'équipe gagnante
+    for (const player of winningTeam.players) {
+      await Player.findByIdAndUpdate(player._id, { $inc: { score: 10 } }); // +10 points par exemple
+    }
+
+    await tournament.save();
+    res.status(200).json({ message: "Tournoi terminé avec succès.", tournament });
+  } catch (error) {
+    console.error("Erreur lors de la clôture du tournoi :", error);
+    res.status(500).json({ message: "Erreur lors de la clôture du tournoi.", error });
+  }
+};

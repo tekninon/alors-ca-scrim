@@ -93,3 +93,40 @@ exports.deletePlayer = async (req, res) => {
     res.status(500).json({ message: "Error deleting player", error });
   }
 };
+
+exports.updatePlayerScore = async (req, res) => {
+  try {
+    const { playerId, scoreAdjustment } = req.body;
+
+    const player = await Player.findById(playerId);
+    if (!player) return res.status(404).json({ message: "Joueur introuvable" });
+
+    // Mise à jour du score
+    player.score = (player.score || 0) + scoreAdjustment;
+    await player.save();
+
+    res.status(200).json({ message: "Score mis à jour avec succès.", player });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du score :", error);
+    res.status(500).json({ message: "Erreur lors de la mise à jour du score.", error });
+  }
+};
+
+exports.getPlayerById = async (req, res) => {
+  try {
+    const { playerId } = req.params;
+    const player = await Player.findById(playerId);
+
+    if (!player) {
+      return res.status(404).json({ message: "Joueur introuvable" });
+    }
+
+    res.status(200).json(player);
+  } catch (error) {
+    console.error("Erreur lors de la récupération du joueur :", error);
+    res.status(500).json({ message: "Erreur lors de la récupération du joueur.", error });
+  }
+};
+
+
+
