@@ -26,4 +26,7 @@ router.put("/update/:playerId", playerController.updatePlayer);
 // Classement des joueurs
 router.get("/ranking", playerController.getRanking);
 
+router.delete("/:playerId", playerController.deletePlayer);
+
+
 module.exports = router;

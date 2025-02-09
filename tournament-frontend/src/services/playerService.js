@@ -28,3 +28,11 @@ export const updatePlayer = async (playerId, updates) => {
 export const fetchRanking = async () => {
   return axios.get(`${API_URL}/players/ranking`);
 };
+
+export const deletePlayer = async (playerId) => {
+  try {
+    return await axios.delete(`${API_URL}/players/${playerId}`);
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Erreur lors de la suppression du joueur.");
+  }
+};

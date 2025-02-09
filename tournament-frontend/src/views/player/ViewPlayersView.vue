@@ -1,16 +1,12 @@
 <template>
   <div class="view-players-by-game container">
     <h2>Voir les joueurs par jeu</h2>
-    
+
     <div class="form-group">
       <label for="gameSelect">Choisir un jeu :</label>
       <select id="gameSelect" v-model="selectedGameId" @change="fetchPlayers">
         <option value="">-- Sélectionner un jeu --</option>
-        <option 
-          v-for="game in games" 
-          :key="game._id" 
-          :value="game._id"
-        >
+        <option v-for="game in games" :key="game._id" :value="game._id">
           {{ game.name }}
         </option>
       </select>
@@ -22,10 +18,9 @@
       <ul class="players-list">
         <li v-for="player in players" :key="player._id" class="player-item">
           {{ player.name }} (Tier {{ player.tier }})
-          <span class="delete-icon" @click="deletePlayer(player._id)">
+          <span class="delete-icon" @click="deletePlayerByGame(player._id)">
             <font-awesome-icon :icon="['fas', 'trash']" />
           </span>
-
         </li>
       </ul>
     </div>
@@ -33,27 +28,37 @@
     <div v-else-if="selectedGameId" class="no-data">
       <p>Aucun joueur pour ce jeu.</p>
     </div>
+
+    <!-- Message d'erreur -->
+    <div v-if="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import gameService from '@/services/gameService'
+import { fetchPlayersByGame , deletePlayer } from "@/services/playerService";
 
+
+// États réactifs
 const games = ref([])
 const selectedGameId = ref("")
 const players = ref([])
+const errorMessage = ref("")
 
-// Charger la liste des jeux
+// Charger la liste des jeux au montage du composant
 onMounted(async () => {
   try {
-    const res = await axios.get('http://localhost:5000/api/games/all')
-    games.value = res.data
+    games.value = await gameService.fetchGames()
   } catch (error) {
-    console.error('Erreur lors de la récupération des jeux :', error)
+    errorMessage.value = "Erreur lors de la récupération des jeux."
+    console.error(error)
   }
 })
 
+// Récupérer les joueurs selon le jeu sélectionné
 async function fetchPlayers() {
   if (!selectedGameId.value) {
     players.value = []
@@ -61,22 +66,24 @@ async function fetchPlayers() {
   }
 
   try {
-    const res = await axios.get(`http://localhost:5000/api/players/by-game/${selectedGameId.value}`)
-    players.value = res.data
+    players.value = await fetchPlayersByGame(selectedGameId.value)
   } catch (error) {
-    console.error('Erreur lors de la récupération des joueurs :', error)
+    errorMessage.value = "Erreur lors de la récupération des joueurs."
+    console.error(error)
   }
 }
 
-async function deletePlayer(playerId) {
+async function deletePlayerByGame(playerId) {
   try {
-    await axios.delete(`http://localhost:5000/api/players/${playerId}`)
-    // Mettre à jour la liste des joueurs après suppression
-    players.value = players.value.filter(player => player._id !== playerId)
+    await deletePlayer(playerId);
+    players.value = players.value.filter(player => player._id !== playerId); // Met à jour la liste localement
+    errorMessage.value = ""; // Réinitialise le message d'erreur s'il y en avait
   } catch (error) {
-    console.error('Erreur lors de la suppression du joueur :', error)
+    errorMessage.value = "Erreur lors de la suppression du joueur.";
+    console.error(error);
   }
 }
+
 </script>
 
 <style scoped>
@@ -173,7 +180,10 @@ select:focus {
   font-size: 1.1rem;
 }
 
-.no-data p {
-  margin: 0;
+.error-message {
+  text-align: center;
+  color: red;
+  font-weight: bold;
+  margin-top: 1rem;
 }
 </style>

@@ -77,3 +77,19 @@ exports.getRanking = async (req, res) => {
     res.status(500).json({ message: "Error fetching ranking", error });
   }
 };
+
+// Supprimer un joueur
+exports.deletePlayer = async (req, res) => {
+  try {
+    const { playerId } = req.params;
+    const deletedPlayer = await Player.findByIdAndDelete(playerId);
+
+    if (!deletedPlayer) {
+      return res.status(404).json({ message: "Player not found." });
+    }
+
+    res.status(200).json({ message: "Player deleted successfully.", player: deletedPlayer });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting player", error });
+  }
+};
