@@ -24,18 +24,38 @@
           <div class="form-group">
             <label>Joueurs disponibles :</label>
             <div class="select-all">
-              <input type="checkbox" id="select-all-add" v-model="selectAllAdd" @change="toggleSelectAllAdd" />
+              <input
+                type="checkbox"
+                id="select-all-add"
+                v-model="selectAllAdd"
+                @change="toggleSelectAllAdd"
+              />
               <label for="select-all-add">Tout sélectionner</label>
             </div>
+            <!-- Champ de recherche pour filtrer les joueurs -->
+            <div class="player-search-container">
+              <input
+                type="text"
+                v-model="searchQuery"
+                placeholder="Rechercher un joueur"
+                class="player-search"
+              />
+            </div>
             <div class="player-list">
-              <div v-for="player in availablePlayersForAdd" :key="player._id" class="player-item">
+              <div
+                v-for="player in filteredAvailablePlayers"
+                :key="player._id"
+                class="player-item"
+              >
                 <input
                   type="checkbox"
                   :value="player._id.toString()"
                   v-model="selectedPlayers"
                   :id="`player-${player._id}`"
                 />
-                <label :for="`player-${player._id}`">{{ player.name }} (Tier {{ player.tier }})</label>
+                <label :for="`player-${player._id}`">
+                  {{ player.name }} (Tier {{ player.tier }})
+                </label>
               </div>
             </div>
           </div>
@@ -86,15 +106,30 @@
                 />
                 <label for="select-all-update">Tout sélectionner</label>
               </div>
+              <!-- Champ de recherche pour filtrer les joueurs dans la modification -->
+              <div class="player-search-container">
+                <input
+                  type="text"
+                  v-model="searchQueryUpdate"
+                  placeholder="Rechercher un joueur"
+                  class="player-search"
+                />
+              </div>
               <div class="player-list">
-                <div v-for="player in availablePlayersForUpdate" :key="player._id" class="player-item">
+                <div
+                  v-for="player in filteredAvailablePlayersUpdate"
+                  :key="player._id"
+                  class="player-item"
+                >
                   <input
                     type="checkbox"
                     :value="player._id.toString()"
                     v-model="updatedPlayers"
                     :id="`update-player-${player._id}`"
                   />
-                  <label :for="`update-player-${player._id}`">{{ player.name }} (Tier {{ player.tier }})</label>
+                  <label :for="`update-player-${player._id}`">
+                    {{ player.name }} (Tier {{ player.tier }})
+                  </label>
                 </div>
               </div>
             </div>
@@ -115,7 +150,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 
 // Données du formulaire d'ajout
@@ -155,6 +190,24 @@ onMounted(async () => {
   }
 });
 
+// Champ de recherche pour filtrer les joueurs (ajout)
+const searchQuery = ref("");
+const filteredAvailablePlayers = computed(() => {
+  if (!searchQuery.value) return availablePlayersForAdd.value;
+  return availablePlayersForAdd.value.filter((player) =>
+    player.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+// Champ de recherche pour filtrer les joueurs (modification)
+const searchQueryUpdate = ref("");
+const filteredAvailablePlayersUpdate = computed(() => {
+  if (!searchQueryUpdate.value) return availablePlayersForUpdate.value;
+  return availablePlayersForUpdate.value.filter((player) =>
+    player.name.toLowerCase().includes(searchQueryUpdate.value.toLowerCase())
+  );
+});
+
 // Récupérer les joueurs disponibles pour l'ajout
 async function fetchAvailablePlayersForAdd() {
   if (!addGameId.value) {
@@ -175,12 +228,10 @@ async function fetchAvailablePlayersForUpdate() {
     availablePlayersForUpdate.value = [];
     return;
   }
-
   try {
     const playersRes = await axios.get(`http://localhost:5000/api/players/by-game/${updatedGameId.value}`);
     availablePlayersForUpdate.value = playersRes.data;
-
-    // Pré-sélectionner les joueurs déjà inscrits
+    // Garder cochés ceux déjà inscrits dans le tournoi
     updatedPlayers.value = updatedPlayers.value.filter((playerId) =>
       availablePlayersForUpdate.value.some((player) => player._id.toString() === playerId)
     );
@@ -244,19 +295,13 @@ async function fetchTournamentDetails() {
     selectAllUpdate.value = false;
     return;
   }
-
   try {
     const res = await axios.get(`http://localhost:5000/api/tournaments/${selectedTournamentId.value}`);
     selectedTournament.value = res.data;
-
-    // Mise à jour des champs pour le formulaire
     updatedName.value = res.data.name;
     updatedGameId.value = res.data.gameId?._id || "";
-
     // Récupérer les joueurs déjà inscrits dans le tournoi
     updatedPlayers.value = res.data.players?.map((player) => player._id.toString()) || [];
-
-    // Récupérer les joueurs disponibles pour la mise à jour
     await fetchAvailablePlayersForUpdate();
   } catch (error) {
     console.error("Erreur lors de la récupération des détails du tournoi :", error);
@@ -264,12 +309,9 @@ async function fetchTournamentDetails() {
   }
 }
 
-
-
 // Modifier un tournoi
 async function handleUpdate() {
   if (!selectedTournamentId.value) return;
-
   isLoadingUpdate.value = true;
   try {
     await axios.put(`http://localhost:5000/api/tournaments/update/${selectedTournamentId.value}`, {
@@ -277,7 +319,6 @@ async function handleUpdate() {
       gameId: updatedGameId.value,
       playerIds: updatedPlayers.value,
     });
-
     showMessage("Tournoi modifié avec succès !", true);
     selectedTournamentId.value = "";
     selectedTournament.value = null;
@@ -293,7 +334,6 @@ async function handleUpdate() {
     isLoadingUpdate.value = false;
   }
 }
-
 
 // Rafraîchir la liste des tournois
 async function fetchTournaments() {
@@ -358,6 +398,7 @@ label {
   margin-bottom: 0.5rem;
   font-weight: 600;
   color: #34495e;
+  cursor: pointer;
 }
 
 input,
@@ -393,52 +434,87 @@ select:focus {
   background: #2980b9;
 }
 
+/* Zone de recherche */
+.player-search-container {
+  margin-top: 0.5rem;
+}
+
+.player-search {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Liste des joueurs avec scrollbar personnalisé */
 .player-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-height: 200px;
+  max-height: 300px;
   overflow-y: auto;
   padding: 0.5rem;
   border: 1px solid #ddd;
   border-radius: 6px;
   background: #fff;
+  margin-top: 0.5rem;
 }
 
+/* Personnalisation de la scrollbar pour Webkit */
+.player-list::-webkit-scrollbar {
+  width: 6px;
+}
+.player-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.player-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+/* Pour Firefox */
+.player-list {
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+/* Style des éléments de la liste */
 .player-item {
   display: flex;
   align-items: center;
+  padding: 0.25rem 0;
   gap: 0.5rem;
+  /* Assurer un alignement vertical uniforme */
+  flex-direction: row;
 }
 
-.player-item input[type="checkbox"] {
-  margin: 0;
-  cursor: pointer;
-  transform: scale(1.2);
-}
-
+.player-item input[type="checkbox"],
 .player-item label {
-  font-size: 1rem;
-  color: #333;
   cursor: pointer;
+}
+
+/* Style optionnel au survol de l'élément */
+.player-item:hover {
+  background-color: #f0f0f0;
 }
 
 .select-all {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
-.select-all input[type="checkbox"] {
-  margin: 0;
-  cursor: pointer;
-  transform: scale(1.2);
+.notification {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 4px;
+  text-align: center;
 }
 
-.select-all label {
-  font-size: 1rem;
-  color: #333;
-  cursor: pointer;
+.notification.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.notification.error {
+  background-color: #f8d7da;
+  color: #721c24;
 }
 </style>
