@@ -19,7 +19,7 @@ exports.addGame = async (req, res) => {
 
 exports.getAllGames = async (req, res) => {
   try {
-    const games = await Game.find();
+    const games = await Game.find().sort({ name: 1 });
     res.status(200).json(games);
   } catch (error) {
     res.status(500).json({ message: "Error fetching games", error });

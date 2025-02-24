@@ -123,7 +123,7 @@ const games = ref([])
 const selectedGameId = ref("")
 const teamCounts = ref({})
 const winnerTeams = ref({})
-const showFinishedTournaments = ref(true)
+const showFinishedTournaments = ref(false)
 
 onMounted(() => {
   fetchGames()

@@ -238,10 +238,7 @@ exports.finishTournament = async (req, res) => {
     tournament.isFinished = true;
     tournament.winnerTeamNumber = winnerTeamNumber;
 
-    // Augmenter le score des joueurs de l'équipe gagnante
-    for (const player of winningTeam.players) {
-      await Player.findByIdAndUpdate(player._id, { $inc: { score: 10 } }); // +10 points par exemple
-    }
+  
 
     await tournament.save();
     res.status(200).json({ message: "Tournoi terminé avec succès.", tournament });

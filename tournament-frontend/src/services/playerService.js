@@ -36,3 +36,15 @@ export const deletePlayer = async (playerId) => {
     throw new Error(error.response?.data?.message || "Erreur lors de la suppression du joueur.");
   }
 };
+
+
+// playerService.js
+export const searchPlayersByName = async (name) => {
+  try {
+    const response = await axios.get(`${API_URL}/players/search?name=${name}`);
+    return response.data;
+  } catch (error) {
+    console.error("Erreur lors de la recherche des joueurs :", error);
+    throw error;
+  }
+};

@@ -8,7 +8,22 @@
         <form @submit.prevent="handleAdd">
           <div class="form-group">
             <label for="add-name">Nom :</label>
-            <input id="add-name" v-model="addName" required placeholder="Entrez le nom du joueur" />
+            <input
+              id="add-name"
+              v-model="addName"
+              @input="searchPlayers"
+              required
+              placeholder="Entrez le nom du joueur"
+            />
+            <ul v-if="suggestions.length" class="autocomplete-suggestions">
+              <li
+                v-for="player in suggestions"
+                :key="player._id"
+                @click="selectSuggestion(player)"
+              >
+                {{ player.name }}
+              </li>
+            </ul>
           </div>
 
           <div class="form-group">
@@ -44,7 +59,11 @@
         <form @submit.prevent="handleUpdate">
           <div class="form-group">
             <label for="select-game">Choisir un jeu :</label>
-            <select id="select-game" v-model="selectedGameId" @change="fetchPlayersByGame(selectedGameId)">
+            <select
+              id="select-game"
+              v-model="selectedGameId"
+              @change="fetchPlayersByGame(selectedGameId)"
+            >
               <option value="">-- Sélectionner un jeu --</option>
               <option v-for="game in games" :key="game._id" :value="game._id">
                 {{ game.name }}
@@ -54,9 +73,18 @@
 
           <div class="form-group" v-if="selectedGameId">
             <label for="select-player">Choisir un joueur :</label>
-            <select id="select-player" v-model="selectedPlayerId" @change="fetchPlayerDetails" required>
+            <select
+              id="select-player"
+              v-model="selectedPlayerId"
+              @change="fetchPlayerDetails"
+              required
+            >
               <option value="">-- Sélectionner un joueur --</option>
-              <option v-for="player in filteredPlayers" :key="player._id" :value="player._id">
+              <option
+                v-for="player in filteredPlayers"
+                :key="player._id"
+                :value="player._id"
+              >
                 {{ player.name }} (Tier {{ player.tier }})
               </option>
             </select>
@@ -96,9 +124,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { addPlayer, updatePlayer } from "@/services/playerService";
-import { fetchPlayersByGame as fetchPlayersByGameAPI } from "@/services/playerService";
-
+import { addPlayer, updatePlayer, searchPlayersByName, fetchPlayersByGame as fetchPlayersByGameAPI } from "@/services/playerService";
 import gameService from "@/services/gameService";
 
 // Données du formulaire d'ajout
@@ -106,6 +132,7 @@ const addName = ref("");
 const addTier = ref(1);
 const addGameId = ref("");
 const games = ref([]);
+const suggestions = ref([]);
 
 // Données du formulaire de modification
 const selectedGameId = ref("");
@@ -126,15 +153,10 @@ const filteredPlayers = computed(() => {
     console.warn("players.value est undefined !");
     return [];
   }
-  
   return players.value.filter((player) => {
     return player.gameId === selectedGameId.value || player.gameId?._id === selectedGameId.value;
   });
 });
-
-
-
-
 
 // Charger les jeux disponibles
 onMounted(async () => {
@@ -146,18 +168,38 @@ onMounted(async () => {
   }
 });
 
+const searchPlayers = async () => {
+  if (!addName.value.trim()) {
+    suggestions.value = [];
+    return;
+  }
+  try {
+    const response = await searchPlayersByName(addName.value);
+    suggestions.value = response;
+  } catch (error) {
+    console.error("Erreur lors de la recherche des joueurs :", error);
+    // Vous pouvez décommenter la ligne suivante pour afficher une notification en cas d'erreur
+    // showMessage("Erreur lors de la recherche des joueurs.", false);
+  }
+};
+
+const selectSuggestion = (player) => {
+  addName.value = player.name;
+  suggestions.value = [];
+};
+
 async function fetchPlayersByGame(gameId) {
   if (!gameId) {
     console.warn("fetchPlayersByGame appelé avec gameId undefined !");
     return;
   }
-
   try {
-    const response = await fetchPlayersByGameAPI(gameId); // ✅ Appel au service
+    const response = await fetchPlayersByGameAPI(gameId);
     players.value = response;
   } catch (error) {
     console.error("Erreur lors de la récupération des joueurs :", error);
-    showMessage("Erreur lors du chargement des joueurs.", false);
+    const errorMsg = error.response?.data?.message || "Erreur lors du chargement des joueurs.";
+    showMessage(errorMsg, false);
   }
 }
 
@@ -167,10 +209,7 @@ async function fetchPlayerDetails() {
     selectedPlayer.value = null;
     return;
   }
-
-  // Trouver le joueur sélectionné dans la liste des joueurs récupérés
   selectedPlayer.value = players.value.find(player => player._id === selectedPlayerId.value);
-
   if (!selectedPlayer.value) {
     console.warn(`Aucun joueur trouvé avec l'ID: ${selectedPlayerId.value}`);
   } else {
@@ -179,83 +218,70 @@ async function fetchPlayerDetails() {
   }
 }
 
-
-// Ajouter un joueur
+// Ajouter un joueur avec gestion d'erreur
 async function handleAdd() {
   if (!addName.value || !addGameId.value) {
     showMessage("Veuillez remplir tous les champs obligatoires.", false);
     return;
   }
-
   isLoading.value = true;
   try {
-    console.log("Game ID sélectionné:", addGameId.value); // Debug
-
     await addPlayer({
       name: addName.value,
       tier: Number(addTier.value),
       gameId: addGameId.value,
     });
-
     showMessage("Joueur ajouté avec succès !", true);
-
     // Réinitialisation des valeurs du formulaire
     addName.value = "";
     addTier.value = 1;
     addGameId.value = "";
-
-    // Vérifier si `addGameId` existe avant d'appeler `fetchPlayersByGame`
+    // Si un jeu est sélectionné dans le formulaire de modification, rafraîchir la liste
     if (selectedGameId.value) {
       await fetchPlayersByGame(selectedGameId.value);
     }
   } catch (error) {
     console.error(error);
-    showMessage("Erreur lors de l'ajout du joueur.", false);
+    const errorMsg = error.response?.data?.message || "Erreur lors de l'ajout du joueur.";
+    showMessage(errorMsg, false);
   } finally {
     isLoading.value = false;
   }
 }
 
-
-// Modifier un joueur
+// Modifier un joueur avec gestion d'erreur
 async function handleUpdate() {
   if (!selectedPlayerId.value) return;
-
   isLoading.value = true;
   try {
     await updatePlayer(selectedPlayerId.value, {
       name: updatedName.value,
       tier: updatedTier.value,
     });
-
     showMessage("Joueur modifié avec succès !", true);
-
-    // Mettre à jour immédiatement la liste des joueurs sans recharger depuis l'API
+    // Mettre à jour la liste locale des joueurs
     const playerIndex = players.value.findIndex(player => player._id === selectedPlayerId.value);
     if (playerIndex !== -1) {
       players.value[playerIndex].name = updatedName.value;
       players.value[playerIndex].tier = updatedTier.value;
     }
-
-    // Rafraîchir les joueurs depuis l'API pour s'assurer des données à jour
+    // Rafraîchir la liste pour s'assurer que les données sont à jour
     await fetchPlayersByGame(selectedGameId.value);
-
-    // Réinitialisation des valeurs
+    // Réinitialisation des valeurs du formulaire de modification
     selectedPlayerId.value = "";
     selectedPlayer.value = null;
     updatedName.value = "";
     updatedTier.value = null;
   } catch (error) {
     console.error(error);
-    showMessage("Erreur lors de la modification du joueur.", false);
+    const errorMsg = error.response?.data?.message || "Erreur lors de la modification du joueur.";
+    showMessage(errorMsg, false);
   } finally {
     isLoading.value = false;
   }
 }
 
-
-
-// Afficher un message
+// Fonction d'affichage de message avec gestion de succès ou erreur
 function showMessage(msg, success) {
   message.value = msg;
   isSuccess.value = success;
@@ -345,5 +371,41 @@ select:focus {
 
 .submit-button:active {
   background: #1c6ea4;
+}
+
+.autocomplete-suggestions {
+  position: absolute;
+  background: #fff;
+  border: 1px solid #ccc;
+  width: 100%;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 5px;
+}
+
+.autocomplete-suggestions li {
+  padding: 8px;
+  cursor: pointer;
+}
+
+.autocomplete-suggestions li:hover {
+  background-color: #f0f0f0;
+}
+
+.notification {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.notification.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.notification.error {
+  background-color: #f8d7da;
+  color: #721c24;
 }
 </style>

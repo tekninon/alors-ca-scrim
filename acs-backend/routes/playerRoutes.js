@@ -14,6 +14,8 @@ router.post(
   playerController.addPlayer
 );
 
+router.get('/search', playerController.searchPlayersByName);
+
 // Récupérer tous les joueurs
 router.get("/all", playerController.getAllPlayers);
 
@@ -31,5 +33,6 @@ router.delete("/:playerId", playerController.deletePlayer);
 router.post("/update-score", playerController.updatePlayerScore);
 // Récupérer un joueur par ID
 router.get("/:playerId", playerController.getPlayerById);
+
 
 module.exports = router;

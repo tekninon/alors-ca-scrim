@@ -15,7 +15,7 @@
 
     <!-- Sélection du tournoi (uniquement après avoir sélectionné un jeu) -->
     <div class="form-group" v-if="selectedGameId">
-      <label>Choisir un tournoi :</label>
+      <label>Choisir un tournoi en cours:</label>
       <select v-model="selectedTournamentId" @change="fetchTournamentDetails">
         <option value="">-- Sélectionner un tournoi --</option>
         <option v-for="t in filteredTournaments" :key="t._id" :value="t._id">
@@ -127,7 +127,7 @@ async function fetchTournamentsByGame() {
   try {
     const res = await axios.get('http://localhost:5000/api/tournaments/all')
     tournaments.value = res.data
-    filteredTournaments.value = tournaments.value.filter(t => t.gameId?._id === selectedGameId.value)
+    filteredTournaments.value = tournaments.value.filter(t => t.gameId?._id === selectedGameId.value && !t.isFinished)
   } catch (error) {
     console.error("Erreur lors du chargement des tournois :", error)
   }
