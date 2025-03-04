@@ -21,12 +21,18 @@
       </label>
     </div>
 
-    <div v-for="tournament in filteredTournaments" :key="tournament._id" class="tournament">
+    <div
+      v-for="tournament in filteredTournaments"
+      :key="tournament._id"
+      class="tournament"
+    >
       <div class="tournament-header">
         <div>
           <h3 @dblclick="editTournament(tournament)" v-if="!tournament.editing">
             {{ tournament.name }}
-            <span class="edit-icon" @click="editTournament(tournament)">🖊️</span>
+            <span class="edit-icon" @click="editTournament(tournament)"
+              >🖊️</span
+            >
           </h3>
           <input
             v-if="tournament.editing"
@@ -37,32 +43,44 @@
           />
           <p>Jeu : {{ tournament.gameId?.name }}</p>
           <p v-if="tournament.isFinished" class="status finished">
-            ✅ Tournoi terminé | Équipe gagnante : Équipe {{ tournament.winnerTeamNumber }}
+            ✅ Tournoi terminé | Équipe gagnante : Équipe
+            {{ tournament.winnerTeamNumber }}
           </p>
         </div>
 
         <div class="teams-input">
           <label>Nombre d'équipes :</label>
-          <input 
-            type="number" 
-            v-model="teamCounts[tournament._id]" 
-            min="2" 
-            :disabled="tournament.isFinished" 
+          <input
+            type="number"
+            v-model="teamCounts[tournament._id]"
+            min="2"
+            :disabled="tournament.isFinished"
           />
-          <button 
-            @click="generateTeams(tournament._id)" 
+          <button
+            @click="generateTeams(tournament._id)"
             :disabled="tournament.isFinished"
           >
             Générer
           </button>
-          <span class="delete-icon" @click="deleteTournament(tournament._id)">🗑️</span>
+          <span class="delete-icon" @click="deleteTournament(tournament._id)"
+            >🗑️</span
+          >
         </div>
       </div>
 
       <div v-if="tournament.teams.length">
         <h4>Équipes :</h4>
         <div class="teams-wrapper">
-          <div v-for="team in tournament.teams" :key="team.teamNumber" class="team-column" :class="{ 'winner-team': tournament.isFinished && team.teamNumber === tournament.winnerTeamNumber }">
+          <div
+            v-for="team in tournament.teams"
+            :key="team.teamNumber"
+            class="team-column"
+            :class="{
+              'winner-team':
+                tournament.isFinished &&
+                team.teamNumber === tournament.winnerTeamNumber,
+            }"
+          >
             <h5>Équipe {{ team.teamNumber }}</h5>
 
             <ul v-if="tournament.isFinished" class="static-list">
@@ -88,9 +106,9 @@
           </div>
         </div>
 
-        <button 
-          class="save-btn" 
-          @click="saveTournament(tournament._id)" 
+        <button
+          class="save-btn"
+          @click="saveTournament(tournament._id)"
           :disabled="tournament.isFinished"
         >
           Enregistrer la composition
@@ -100,7 +118,11 @@
         <div v-if="!tournament.isFinished" class="finish-tournament">
           <label>Choisir l'équipe gagnante :</label>
           <select v-model="winnerTeams[tournament._id]" class="winner-select">
-            <option v-for="team in tournament.teams" :key="team.teamNumber" :value="team.teamNumber">
+            <option
+              v-for="team in tournament.teams"
+              :key="team.teamNumber"
+              :value="team.teamNumber"
+            >
               Équipe {{ team.teamNumber }}
             </option>
           </select>
@@ -114,89 +136,121 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
-import draggable from 'vuedraggable'
+import { ref, onMounted, computed } from "vue";
+import { tournamentService } from "@/services/tournamentService";
+import { gameService } from "@/services/gameService";
+import draggable from "vuedraggable";
 
-const tournaments = ref([])
-const games = ref([])
-const selectedGameId = ref("")
-const teamCounts = ref({})
-const winnerTeams = ref({})
-const showFinishedTournaments = ref(false)
+const tournaments = ref([]);
+const games = ref([]);
+const selectedGameId = ref("");
+const teamCounts = ref({});
+const winnerTeams = ref({});
+const showFinishedTournaments = ref(false);
 
 onMounted(() => {
-  fetchGames()
-  fetchTournaments()
-})
+  fetchGames();
+  fetchTournaments();
+});
 
 async function fetchGames() {
-  const response = await axios.get('http://localhost:5000/api/games/all')
-  games.value = response.data
+  try {
+    games.value = await gameService.fetchGames();
+  } catch (error) {
+    console.error("Erreur lors de la récupération des jeux :", error);
+  }
 }
 
 async function fetchTournaments() {
-  const response = await axios.get('http://localhost:5000/api/tournaments/all')
-  tournaments.value = response.data.map(t => ({ ...t, editing: false }))
-  response.data.forEach(t => {
-    teamCounts.value[t._id] = 2
-    winnerTeams.value[t._id] = null
-  })
+  try {
+    const data = await tournamentService.fetchTournaments();
+    tournaments.value = data.map((t) => ({ ...t, editing: false }));
+    data.forEach((t) => {
+      teamCounts.value[t._id] = 2;
+      winnerTeams.value[t._id] = null;
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des tournois :", error);
+  }
 }
 
 const filteredTournaments = computed(() => {
-  let filtered = tournaments.value
+  let filtered = tournaments.value;
   if (selectedGameId.value) {
-    filtered = filtered.filter(t => t.gameId?._id === selectedGameId.value)
+    filtered = filtered.filter((t) => t.gameId?._id === selectedGameId.value);
   }
   if (!showFinishedTournaments.value) {
-    filtered = filtered.filter(t => !t.isFinished)
+    filtered = filtered.filter((t) => !t.isFinished);
   }
-  return filtered
-})
+  return filtered;
+});
 
 function editTournament(tournament) {
-  tournament.editing = true
+  tournament.editing = true;
 }
 
 async function updateTournament(tournament) {
-  tournament.editing = false
-  await axios.put(`http://localhost:5000/api/tournaments/update/${tournament._id}`, { name: tournament.name })
+  tournament.editing = false;
+  try {
+    await tournamentService.updateTournament(tournament._id, {
+      name: tournament.name,
+    });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du tournoi :", error);
+  }
 }
 
 async function deleteTournament(tournamentId) {
-  if (!confirm("Êtes-vous sûr de vouloir supprimer ce tournoi ?")) return
-  await axios.delete(`http://localhost:5000/api/tournaments/delete/${tournamentId}`)
-  fetchTournaments()
+  if (!confirm("Êtes-vous sûr de vouloir supprimer ce tournoi ?")) return;
+  try {
+    await tournamentService.deleteTournament(tournamentId);
+    fetchTournaments();
+  } catch (error) {
+    console.error("Erreur lors de la suppression du tournoi :", error);
+  }
 }
 
 async function generateTeams(tournamentId) {
-  const numberOfTeams = teamCounts.value[tournamentId] || 2
-  await axios.post(`http://localhost:5000/api/tournaments/generate-teams/${tournamentId}`, { numberOfTeams })
-  fetchTournaments()
+  const numberOfTeams = teamCounts.value[tournamentId] || 2;
+  try {
+    await tournamentService.generateTeams(tournamentId, numberOfTeams);
+    fetchTournaments();
+  } catch (error) {
+    console.error("Erreur lors de la génération des équipes :", error);
+  }
 }
 
 async function saveTournament(tournamentId) {
-  await axios.post(`http://localhost:5000/api/tournaments/update-teams/${tournamentId}`, { teams: tournaments.value.find(t => t._id === tournamentId).teams })
-  fetchTournaments()
+  try {
+    await tournamentService.saveTournamentTeams(
+      tournamentId,
+      tournaments.value.find((t) => t._id === tournamentId).teams
+    );
+    fetchTournaments();
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde des équipes :", error);
+  }
 }
 
 async function finishTournament(tournamentId) {
-  const winnerTeam = winnerTeams.value[tournamentId]
+  const winnerTeam = winnerTeams.value[tournamentId];
   if (!winnerTeam) {
-    alert("Veuillez sélectionner une équipe gagnante !")
-    return
+    alert("Veuillez sélectionner une équipe gagnante !");
+    return;
   }
-  await axios.post(`http://localhost:5000/api/tournaments/finish/${tournamentId}`, { winnerTeamNumber: winnerTeam })
-  alert("Tournoi terminé avec succès !")
-  fetchTournaments()
+  try {
+    await tournamentService.finishTournament(tournamentId, winnerTeam);
+    alert("Tournoi terminé avec succès !");
+    fetchTournaments();
+  } catch (error) {
+    console.error("Erreur lors de la finalisation du tournoi :", error);
+  }
 }
 
 function onDragEnd(evt) {
-  console.log('Drag terminé !', evt)
+  console.log("Drag terminé !", evt);
 }
 </script>
-
 
 <style scoped>
 /* Conteneur global */
@@ -457,5 +511,4 @@ h2 {
   font-weight: bold;
   border: 2px solid #4eb378;
 }
-
 </style>

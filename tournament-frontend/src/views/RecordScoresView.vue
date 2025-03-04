@@ -30,18 +30,23 @@
       <p>Jeu : {{ selectedTournament.gameId?.name }}</p>
 
       <h4>Équipes</h4>
-      <div v-for="team in selectedTournament.teams" :key="team.teamNumber" class="team-score">
+      <div
+        v-for="team in selectedTournament.teams"
+        :key="team.teamNumber"
+        class="team-score"
+      >
         <h5>Équipe {{ team.teamNumber }}</h5>
-        <small>Joueurs :
+        <small
+          >Joueurs :
           <span v-for="player in team.players" :key="player._id">
-            {{ player.name }} |
+            {{ player.name || player._id }} |
           </span>
         </small>
-        <input 
-          type="number" 
-          v-model.number="teamScores[team.teamNumber]" 
+        <input
+          type="number"
+          v-model.number="teamScores[team.teamNumber]"
           class="score-input"
-          placeholder="Score" 
+          placeholder="Score"
         />
       </div>
 
@@ -54,25 +59,31 @@
         <label>Choisir un joueur :</label>
         <select v-model="selectedPlayerId" @change="fetchPlayerDetails">
           <option value="">-- Sélectionner un joueur --</option>
-          <optgroup 
-            v-for="team in selectedTournament.teams" 
-            :key="team.teamNumber" 
+          <optgroup
+            v-for="team in selectedTournament.teams"
+            :key="team.teamNumber"
             :label="'Équipe ' + team.teamNumber"
           >
-            <option v-for="player in team.players" :key="player._id" :value="player._id">
-              {{ player.name }} (Tier {{ player.tier }})
+            <option
+              v-for="player in team.players"
+              :key="player._id"
+              :value="player._id"
+            >
+              {{ player.name || player._id }} (Tier {{ player.tier }})
             </option>
           </optgroup>
         </select>
 
         <div v-if="selectedPlayerDetails">
-          <p>Score actuel : <strong>{{ selectedPlayerDetails.score }}</strong></p>
+          <p>
+            Score actuel : <strong>{{ selectedPlayerDetails.score }}</strong>
+          </p>
         </div>
 
-        <input 
-          type="number" 
-          v-model.number="individualScoreAdjustment" 
-          placeholder="Ajustement du score" 
+        <input
+          type="number"
+          v-model.number="individualScoreAdjustment"
+          placeholder="Ajustement du score"
         />
         <button class="update-button" @click="updatePlayerScore">
           Mettre à jour le score
@@ -87,130 +98,140 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, onMounted } from "vue";
+import { gameService } from "@/services/gameService";
+import { tournamentService } from "@/services/tournamentService";
+import { playerService } from "@/services/playerService";
 
-const games = ref([])
-const tournaments = ref([])
-const filteredTournaments = ref([])
-const selectedGameId = ref("")
-const selectedTournamentId = ref("")
-const selectedTournament = ref(null)
-const selectedPlayerId = ref("")
-const individualScoreAdjustment = ref(0)
-const selectedPlayerDetails = ref(null)
+const games = ref([]);
+const tournaments = ref([]);
+const filteredTournaments = ref([]);
+const selectedGameId = ref("");
+const selectedTournamentId = ref("");
+const selectedTournament = ref(null);
+const selectedPlayerId = ref("");
+const individualScoreAdjustment = ref(0);
+const selectedPlayerDetails = ref(null);
 
 // Dictionnaire stockant les scores par équipe
-const teamScores = ref({})
+const teamScores = ref({});
 
 // Charger la liste des jeux au montage
 onMounted(async () => {
   try {
-    const res = await axios.get('http://localhost:5000/api/games/all')
-    games.value = res.data
+    games.value = await gameService.fetchGames();
   } catch (error) {
-    console.error("Erreur lors du chargement des jeux :", error)
+    console.error("Erreur lors du chargement des jeux :", error);
   }
-})
+});
 
 // Charger les tournois en fonction du jeu sélectionné
 async function fetchTournamentsByGame() {
-  selectedTournamentId.value = ""
-  selectedTournament.value = null
-  teamScores.value = {}
+  selectedTournamentId.value = "";
+  selectedTournament.value = null;
+  teamScores.value = {};
 
   if (!selectedGameId.value) {
-    filteredTournaments.value = []
-    return
+    filteredTournaments.value = [];
+    return;
   }
 
   try {
-    const res = await axios.get('http://localhost:5000/api/tournaments/all')
-    tournaments.value = res.data
-    filteredTournaments.value = tournaments.value.filter(t => t.gameId?._id === selectedGameId.value && !t.isFinished)
+    tournaments.value = await tournamentService.fetchTournaments();
+    filteredTournaments.value = tournaments.value.filter(
+      (t) => t.gameId?._id === selectedGameId.value && !t.isFinished
+    );
   } catch (error) {
-    console.error("Erreur lors du chargement des tournois :", error)
+    console.error("Erreur lors du chargement des tournois :", error);
   }
 }
 
 // Charger les détails du tournoi sélectionné
 async function fetchTournamentDetails() {
   if (!selectedTournamentId.value) {
-    selectedTournament.value = null
-    return
+    selectedTournament.value = null;
+    return;
   }
 
   try {
-    const res = await axios.get('http://localhost:5000/api/tournaments/all')
-    const found = res.data.find(t => t._id === selectedTournamentId.value)
+    const found = await tournamentService.fetchTournamentDetails(
+      selectedTournamentId.value
+    );
     if (found) {
-      selectedTournament.value = found
-      teamScores.value = {}
+      selectedTournament.value = found;
+      teamScores.value = {};
       if (found.teams) {
-        found.teams.forEach(team => {
-          teamScores.value[team.teamNumber] = 0
-        })
+        for (const team of found.teams) {
+          team.players = await Promise.all(
+            team.players.map(async (playerId) => {
+              const player = await playerService.fetchPlayerDetails(playerId);
+              return player;
+            })
+          );
+          teamScores.value[team.teamNumber] = 0;
+        }
       }
     } else {
-      selectedTournament.value = null
+      selectedTournament.value = null;
     }
   } catch (error) {
-    console.error("Erreur lors du chargement du tournoi :", error)
+    console.error("Erreur lors du chargement du tournoi :", error);
   }
 }
 
 // Enregistrer les scores des équipes
 async function recordScores() {
-  if (!selectedTournament.value) return
+  if (!selectedTournament.value) return;
 
-  const scoresPayload = Object.keys(teamScores.value).map(teamNum => ({
+  const scoresPayload = Object.keys(teamScores.value).map((teamNum) => ({
     teamNumber: parseInt(teamNum),
-    score: teamScores.value[teamNum]
-  }))
+    score: teamScores.value[teamNum],
+  }));
 
   try {
-    await axios.post('http://localhost:5000/api/tournaments/record-scores', {
-      tournamentId: selectedTournament.value._id,
-      teamScores: scoresPayload
-    })
-    alert('Scores enregistrés avec succès !')
+    await tournamentService.recordScores(
+      selectedTournament.value._id,
+      scoresPayload
+    );
+    alert("Scores enregistrés avec succès !");
   } catch (error) {
-    console.error(error)
-    alert("Erreur lors de l'enregistrement des scores")
+    console.error(error);
+    alert("Erreur lors de l'enregistrement des scores");
   }
 }
 
 // Récupérer les détails d'un joueur
 async function fetchPlayerDetails() {
   if (!selectedPlayerId.value) {
-    selectedPlayerDetails.value = null
-    return
+    selectedPlayerDetails.value = null;
+    return;
   }
 
   try {
-    const res = await axios.get(`http://localhost:5000/api/players/${selectedPlayerId.value}`)
-    selectedPlayerDetails.value = res.data
+    selectedPlayerDetails.value = await playerService.fetchPlayerDetails(
+      selectedPlayerId.value
+    );
   } catch (error) {
-    console.error(error)
-    alert("Erreur lors de la récupération des détails du joueur.")
+    console.error(error);
+    alert("Erreur lors de la récupération des détails du joueur.");
   }
 }
 
 // Mettre à jour le score individuel d'un joueur
 async function updatePlayerScore() {
-  if (!selectedPlayerId.value || !individualScoreAdjustment.value) return
+  if (!selectedPlayerId.value || !individualScoreAdjustment.value) return;
 
   try {
-    await axios.post('http://localhost:5000/api/players/update-score', {
-      playerId: selectedPlayerId.value,
-      scoreAdjustment: individualScoreAdjustment.value
-    })
-    alert("Score du joueur mis à jour avec succès !")
-    individualScoreAdjustment.value = 0
-    await fetchPlayerDetails()
+    await playerService.updatePlayerScore(
+      selectedPlayerId.value,
+      individualScoreAdjustment.value
+    );
+    alert("Score du joueur mis à jour avec succès !");
+    individualScoreAdjustment.value = 0;
+    await fetchPlayerDetails();
   } catch (error) {
-    console.error(error)
-    alert("Erreur lors de la mise à jour du score")
+    console.error(error);
+    alert("Erreur lors de la mise à jour du score");
   }
 }
 </script>
@@ -261,7 +282,8 @@ label {
   color: #34495e;
 }
 
-select, input {
+select,
+input {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ccc;
@@ -270,7 +292,8 @@ select, input {
   transition: border-color 0.3s ease;
 }
 
-select:focus, input:focus {
+select:focus,
+input:focus {
   border-color: #3498db;
   outline: none;
 }

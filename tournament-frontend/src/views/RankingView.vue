@@ -5,8 +5,7 @@
       <option value="players">Classement général</option>
       <option value="games">Gagnant par tournoi</option>
       <option value="teams">Classement par tournoi par équipe</option>
-      <option value="playersByGame">Classement par joueur par jeu</option> <!-- Nouvelle option -->
-
+      <option value="playersByGame">Classement par joueur par jeu</option>
     </select>
 
     <!-- Classement des joueurs -->
@@ -19,35 +18,61 @@
               <th>
                 Position
                 <button @click="sortPlayers('position')">
-                  {{ sortPlayerColumn === 'position' && sortPlayerDirection === 'asc' ? '▲' : '▼' }}
+                  {{
+                    sortPlayerColumn === "position" &&
+                    sortPlayerDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                  }}
                 </button>
               </th>
               <th>
                 Nom
-                <input v-model="playerNameFilter" placeholder="Filtrer par nom" />
+                <input
+                  v-model="playerNameFilter"
+                  placeholder="Filtrer par nom"
+                />
               </th>
               <th>
                 Score Total
                 <button @click="sortPlayers('totalScore')">
-                  {{ sortPlayerColumn === 'totalScore' && sortPlayerDirection === 'asc' ? '▲' : '▼' }}
+                  {{
+                    sortPlayerColumn === "totalScore" &&
+                    sortPlayerDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                  }}
                 </button>
               </th>
               <th>
                 Nombre de Jeux
                 <button @click="sortPlayers('gamesCount')">
-                  {{ sortPlayerColumn === 'gamesCount' && sortPlayerDirection === 'asc' ? '▲' : '▼' }}
+                  {{
+                    sortPlayerColumn === "gamesCount" &&
+                    sortPlayerDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                  }}
                 </button>
               </th>
               <th>
                 Ratio de points par jeu
                 <button @click="sortPlayers('ratio')">
-                  {{ sortPlayerColumn === 'ratio' && sortPlayerDirection === 'asc' ? '▲' : '▼' }}
+                  {{
+                    sortPlayerColumn === "ratio" &&
+                    sortPlayerDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                  }}
                 </button>
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(player, index) in sortedAndFilteredPlayers" :key="index">
+            <tr
+              v-for="(player, index) in sortedAndFilteredPlayers"
+              :key="index"
+            >
               <td>{{ index + 1 }}</td>
               <td>{{ player.name }}</td>
               <td>{{ player.totalScore }}</td>
@@ -71,7 +96,10 @@
             <tr>
               <th>
                 Tournoi
-                <input v-model="tournamentNameFilter" placeholder="Filtrer par tournoi" />
+                <input
+                  v-model="tournamentNameFilter"
+                  placeholder="Filtrer par tournoi"
+                />
               </th>
               <th>
                 Jeu
@@ -79,17 +107,27 @@
               </th>
               <th>
                 Équipe gagnante
-                <input v-model="winningTeamFilter" placeholder="Filtrer par équipe" />
+                <input
+                  v-model="winningTeamFilter"
+                  placeholder="Filtrer par équipe"
+                />
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="tournament in sortedAndFilteredTournaments" :key="tournament._id">
+            <tr
+              v-for="tournament in sortedAndFilteredTournaments"
+              :key="tournament._id"
+            >
               <td>{{ tournament.name }}</td>
               <td>{{ tournament.gameId?.name }}</td>
               <td>
                 <span v-if="getWinningTeam(tournament)">
-                  {{ getWinningTeam(tournament).players.map(player => player.name).join(", ") }}
+                  {{
+                    getWinningTeam(tournament)
+                      .players.map((player) => player.name)
+                      .join(", ")
+                  }}
                 </span>
                 <span v-else>Aucune équipe gagnante</span>
               </td>
@@ -111,38 +149,55 @@
             <tr>
               <th>
                 Tournoi
-                <input v-model="tournamentNameFilter" placeholder="Filtrer par tournoi" />
+                <input
+                  v-model="tournamentNameFilter"
+                  placeholder="Filtrer par tournoi"
+                />
               </th>
-              <th>
-                Équipe
-              </th>
+              <th>Équipe</th>
               <th>
                 Score
                 <button @click="sortTeams('score')">
-                  {{ sortTeamColumn === 'score' && sortTeamDirection === 'asc' ? '▲' : '▼' }}
+                  {{
+                    sortTeamColumn === "score" && sortTeamDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                  }}
                 </button>
               </th>
-              <th>
-                Joueurs
-              </th>
+              <th>Joueurs</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="tournament in sortedAndFilteredTournaments" :key="tournament._id">
+            <tr
+              v-for="tournament in sortedAndFilteredTournaments"
+              :key="tournament._id"
+            >
               <td>{{ tournament.name }}</td>
               <td>
-                <div v-for="team in sortedAndFilteredTeams(tournament)" :key="team.teamNumber">
+                <div
+                  v-for="team in sortedAndFilteredTeams(tournament)"
+                  :key="team.teamNumber"
+                >
                   <span>Équipe {{ team.teamNumber }}</span>
                 </div>
               </td>
               <td>
-                <div v-for="team in sortedAndFilteredTeams(tournament)" :key="team.teamNumber">
+                <div
+                  v-for="team in sortedAndFilteredTeams(tournament)"
+                  :key="team.teamNumber"
+                >
                   <span>{{ team.score }}</span>
                 </div>
               </td>
               <td>
-                <div v-for="team in sortedAndFilteredTeams(tournament)" :key="team.teamNumber">
-                  <span>{{ team.players.map(player => player.name).join(", ") }}</span>
+                <div
+                  v-for="team in sortedAndFilteredTeams(tournament)"
+                  :key="team.teamNumber"
+                >
+                  <span>{{
+                    team.players.map((player) => player.name).join(", ")
+                  }}</span>
                 </div>
               </td>
             </tr>
@@ -153,15 +208,17 @@
         <p>Aucun tournoi terminé trouvé.</p>
       </div>
     </div>
-  </div>
-  <!-- Classement par joueur par jeu -->
-  <div v-if="selectedTable === 'playersByGame'">
+
+    <!-- Classement par joueur par jeu -->
+    <div v-if="selectedTable === 'playersByGame'">
       <h2>Classement par joueur par jeu</h2>
       <div>
         <label for="gameFilter">Filtrer par jeu :</label>
         <select v-model="selectedGameId" id="gameFilter">
           <option value="">Tous les jeux</option>
-          <option v-for="game in games" :key="game._id" :value="game._id">{{ game.name }}</option>
+          <option v-for="game in games" :key="game._id" :value="game._id">
+            {{ game.name }}
+          </option>
         </select>
       </div>
       <div v-if="playersByGame.length">
@@ -175,11 +232,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(player, index) in sortedPlayersByGame" :key="player._id">
+            <tr
+              v-for="(player, index) in sortedPlayersByGame"
+              :key="player._id"
+            >
               <td>{{ index + 1 }}</td>
               <td>{{ player.name }}</td>
               <td>{{ player.score }}</td>
-              <td>{{ player.gameId?.name }}</td>
+              <td>{{ player.gameName }}</td>
             </tr>
           </tbody>
         </table>
@@ -188,115 +248,96 @@
         <p>Aucun joueur trouvé pour ce jeu.</p>
       </div>
     </div>
-  
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, computed, onMounted } from "vue";
+import { playerService } from "@/services/playerService";
+import { tournamentService } from "@/services/tournamentService";
+import { gameService } from "@/services/gameService";
 
-const players = ref([])
-const finishedTournaments = ref([])
-const games = ref([]) // Liste des jeux disponibles
-const playersByGameRes = ref([])
-
+const players = ref([]);
+const finishedTournaments = ref([]);
+const games = ref([]);
+const playersByGameRes = ref([]);
 
 // Filtres et tris pour les joueurs
-const playerNameFilter = ref('')
-const sortPlayerColumn = ref('position')
-const sortPlayerDirection = ref('asc')
+const playerNameFilter = ref("");
+const sortPlayerColumn = ref("position");
+const sortPlayerDirection = ref("asc");
 
 // Filtres pour les tournois
-const tournamentNameFilter = ref('')
-const gameNameFilter = ref('')
-const winningTeamFilter = ref('')
+const tournamentNameFilter = ref("");
+const gameNameFilter = ref("");
+const winningTeamFilter = ref("");
 
 // Filtres et tris pour les équipes
-const teamNameFilter = ref('')
-const sortTeamColumn = ref('score')
-const sortTeamDirection = ref('desc')
+const teamNameFilter = ref("");
+const sortTeamColumn = ref("score");
+const sortTeamDirection = ref("desc");
 
 // Sélection du tableau à afficher
-const selectedTable = ref('players') // Par défaut, afficher le classement des joueurs
+const selectedTable = ref("players");
 
 // Filtre pour le classement par joueur par jeu
-const selectedGameId = ref('') // Jeu sélectionné
+const selectedGameId = ref("");
 
 onMounted(async () => {
   try {
-    // Récupère la liste des joueurs triés par score
-    const playersRes = await axios.get("http://localhost:5000/api/players/ranking");
-    players.value = playersRes.data;
-
-    // Récupère la liste des tournois terminés
-    const tournamentsRes = await axios.get('http://localhost:5000/api/tournaments/finished')
-    finishedTournaments.value = tournamentsRes.data
-    console.log(tournamentsRes.data);
-
-    // Récupère la liste des jeux
-    const gamesRes = await axios.get('http://localhost:5000/api/games/all')
-    games.value = gamesRes.data
-
-    // Récupère les joueurs
-    const playersByGameResData = await axios.get("http://localhost:5000/api/players/all");
-    playersByGameRes.value = playersByGameResData.data; // Assurez-vous que c'est un tableau
-
+    players.value = await playerService.fetchPlayerRanking();
+    finishedTournaments.value =
+      await tournamentService.fetchFinishedTournaments();
+    games.value = await gameService.fetchGames();
+    playersByGameRes.value = await playerService.fetchAllPlayers();
   } catch (error) {
-    console.error('Erreur lors de la récupération des classements :', error)
+    console.error("Erreur lors de la récupération des classements :", error);
   }
-})
+});
 
 // Récupérer les joueurs par jeu
 const playersByGame = computed(() => {
-  console.log(playersByGameRes);
-
-  // Créer une nouvelle structure de données sans modifier les objets existants
-  const playersWithGame = playersByGameRes.value.map(player => {
-    const game = games.value.find(game => game._id === player.gameId);
-    console.log(player);
-    console.log("game", game);
+  const playersWithGame = playersByGameRes.value.map((player) => {
+    const game = games.value.find((game) => game._id === player.gameId._id);
     return {
       ...player,
-      gameName: game ? game.name : 'Jeu inconnu', // Ajouter le nom du jeu sans modifier l'objet d'origine
+      gameName: game ? game.name : "Jeu inconnu",
+      gameId: player.gameId._id, // Assurez-vous que gameId est une chaîne
     };
   });
 
-  console.log("playersWithGame", playersWithGame);
-
-  // Filtrer les joueurs si un jeu est sélectionné
   if (selectedGameId.value) {
-    console.log("selectedGameId.value", selectedGameId.value);
-    return playersWithGame.filter(player => player.gameId._id === selectedGameId.value);  // Compare avec _id
+    const filteredPlayers = playersWithGame.filter(
+      (player) => player.gameId === selectedGameId.value
+    );
+    return filteredPlayers;
   }
 
-  // Retourner tous les joueurs si aucun jeu n'est sélectionné
   return playersWithGame;
 });
 
-
 const sortedPlayersByGame = computed(() => {
-  // Créer une copie du tableau avant de le trier
   return [...playersByGame.value].sort((a, b) => b.score - a.score);
 });
 
 const getWinningTeam = (tournament) => {
   if (!tournament.winnerTeamNumber || !tournament.teams) return null;
-  
-  // Recherche l'équipe dont le numéro correspond à winnerTeamNumber
-  return tournament.teams.find(team => team.teamNumber === tournament.winnerTeamNumber);
+  return tournament.teams.find(
+    (team) => team.teamNumber === tournament.winnerTeamNumber
+  );
 };
 
 // Tri et filtrage des équipes
 const sortedAndFilteredTeams = (tournament) => {
-  let filtered = tournament.teams.filter(team =>
-    team.players.some(player => player.name.toLowerCase().includes(teamNameFilter.value.toLowerCase()))
+  let filtered = tournament.teams.filter((team) =>
+    team.players.some((player) =>
+      player.name.toLowerCase().includes(teamNameFilter.value.toLowerCase())
+    )
   );
 
-  if (sortTeamColumn.value === 'score') {
+  if (sortTeamColumn.value === "score") {
     filtered.sort((a, b) =>
-      sortTeamDirection.value === 'asc'
-        ? a.score - b.score
-        : b.score - a.score
+      sortTeamDirection.value === "asc" ? a.score - b.score : b.score - a.score
     );
   }
 
@@ -305,61 +346,73 @@ const sortedAndFilteredTeams = (tournament) => {
 
 // Tri et filtrage des joueurs
 const sortedAndFilteredPlayers = computed(() => {
-  let filtered = players.value.filter(player =>
+  let filtered = players.value.filter((player) =>
     player.name.toLowerCase().includes(playerNameFilter.value.toLowerCase())
-  )
+  );
 
-  if (sortPlayerColumn.value === 'position') {
-  filtered.sort((a, b) => {
-    const indexA = filtered.indexOf(a)
-    const indexB = filtered.indexOf(b)
-    return sortPlayerDirection.value === 'asc' ? indexA - indexB : indexB - indexA
-  })
-} else if (sortPlayerColumn.value === 'totalScore') {
+  if (sortPlayerColumn.value === "position") {
+    filtered.sort((a, b) => {
+      const indexA = filtered.indexOf(a);
+      const indexB = filtered.indexOf(b);
+      return sortPlayerDirection.value === "asc"
+        ? indexA - indexB
+        : indexB - indexA;
+    });
+  } else if (sortPlayerColumn.value === "totalScore") {
     filtered.sort((a, b) =>
-      sortPlayerDirection.value === 'asc'
+      sortPlayerDirection.value === "asc"
         ? a.totalScore - b.totalScore
         : b.totalScore - a.totalScore
-    )
-  } else if (sortPlayerColumn.value === 'gamesCount') {
+    );
+  } else if (sortPlayerColumn.value === "gamesCount") {
     filtered.sort((a, b) =>
-      sortPlayerDirection.value === 'asc'
+      sortPlayerDirection.value === "asc"
         ? a.gamesCount - b.gamesCount
         : b.gamesCount - a.gamesCount
-    )
-  }
-  else if (sortPlayerColumn.value === 'ratio') {
+    );
+  } else if (sortPlayerColumn.value === "ratio") {
     filtered.sort((a, b) =>
-      sortPlayerDirection.value === 'asc'
+      sortPlayerDirection.value === "asc"
         ? a.ratio - b.ratio
         : b.ratio - a.ratio
-    )
+    );
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // Filtrage des tournois
 const sortedAndFilteredTournaments = computed(() => {
-  return finishedTournaments.value.filter(tournament =>
-    tournament.name.toLowerCase().includes(tournamentNameFilter.value.toLowerCase()) &&
-    tournament.gameId?.name.toLowerCase().includes(gameNameFilter.value.toLowerCase()) &&
-    (tournament.winningTeam?.players.map(player => player.name).join(", ") || '')
-      .toLowerCase()
-      .includes(winningTeamFilter.value.toLowerCase())
-  )
-})
+  return finishedTournaments.value.filter(
+    (tournament) =>
+      tournament.name
+        .toLowerCase()
+        .includes(tournamentNameFilter.value.toLowerCase()) &&
+      tournament.gameId?.name
+        .toLowerCase()
+        .includes(gameNameFilter.value.toLowerCase()) &&
+      (
+        tournament.winningTeam?.players
+          .map((player) => player.name)
+          .join(", ") || ""
+      )
+        .toLowerCase()
+        .includes(winningTeamFilter.value.toLowerCase())
+  );
+});
 
 // Fonction pour trier les joueurs
 function sortPlayers(column) {
   if (sortPlayerColumn.value === column) {
-    sortPlayerDirection.value = sortPlayerDirection.value === 'asc' ? 'desc' : 'asc'
+    sortPlayerDirection.value =
+      sortPlayerDirection.value === "asc" ? "desc" : "asc";
   } else {
-    sortPlayerColumn.value = column
-    sortPlayerDirection.value = 'asc'
+    sortPlayerColumn.value = column;
+    sortPlayerDirection.value = "asc";
   }
 }
 </script>
+
 <style scoped>
 .container {
   max-width: 1000px;

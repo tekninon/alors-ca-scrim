@@ -37,53 +37,53 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import gameService from '@/services/gameService'
-import { fetchPlayersByGame , deletePlayer } from "@/services/playerService";
-
+import { ref, onMounted } from "vue";
+import { gameService } from "@/services/gameService";
+import { playerService } from "@/services/playerService";
 
 // États réactifs
-const games = ref([])
-const selectedGameId = ref("")
-const players = ref([])
-const errorMessage = ref("")
+const games = ref([]);
+const selectedGameId = ref("");
+const players = ref([]);
+const errorMessage = ref("");
 
 // Charger la liste des jeux au montage du composant
 onMounted(async () => {
   try {
-    games.value = await gameService.fetchGames()
+    games.value = await gameService.fetchGames();
   } catch (error) {
-    errorMessage.value = "Erreur lors de la récupération des jeux."
-    console.error(error)
+    errorMessage.value = "Erreur lors de la récupération des jeux.";
+    console.error(error);
   }
-})
+});
 
 // Récupérer les joueurs selon le jeu sélectionné
 async function fetchPlayers() {
   if (!selectedGameId.value) {
-    players.value = []
-    return
+    players.value = [];
+    return;
   }
 
   try {
-    players.value = await fetchPlayersByGame(selectedGameId.value)
+    players.value = await playerService.fetchPlayersByGame(
+      selectedGameId.value
+    );
   } catch (error) {
-    errorMessage.value = "Erreur lors de la récupération des joueurs."
-    console.error(error)
+    errorMessage.value = "Erreur lors de la récupération des joueurs.";
+    console.error(error);
   }
 }
 
 async function deletePlayerByGame(playerId) {
   try {
-    await deletePlayer(playerId);
-    players.value = players.value.filter(player => player._id !== playerId); // Met à jour la liste localement
+    await playerService.deletePlayer(playerId);
+    players.value = players.value.filter((player) => player._id !== playerId); // Met à jour la liste localement
     errorMessage.value = ""; // Réinitialise le message d'erreur s'il y en avait
   } catch (error) {
     errorMessage.value = "Erreur lors de la suppression du joueur.";
     console.error(error);
   }
 }
-
 </script>
 
 <style scoped>

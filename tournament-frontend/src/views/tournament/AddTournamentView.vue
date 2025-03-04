@@ -8,12 +8,22 @@
         <form @submit.prevent="handleAdd">
           <div class="form-group">
             <label for="tournament-name">Nom :</label>
-            <input id="tournament-name" v-model="addName" required placeholder="Entrez le nom du tournoi" />
+            <input
+              id="tournament-name"
+              v-model="addName"
+              required
+              placeholder="Entrez le nom du tournoi"
+            />
           </div>
 
           <div class="form-group">
             <label for="tournament-game">Jeu :</label>
-            <select id="tournament-game" v-model="addGameId" required @change="fetchAvailablePlayersForAdd">
+            <select
+              id="tournament-game"
+              v-model="addGameId"
+              required
+              @change="fetchAvailablePlayersForAdd"
+            >
               <option value="">-- Choisir un jeu --</option>
               <option v-for="game in games" :key="game._id" :value="game._id">
                 {{ game.name }}
@@ -61,7 +71,11 @@
           </div>
 
           <button type="submit" class="submit-button" :disabled="isLoadingAdd">
-            {{ isLoadingAdd ? "Création en cours..." : "Créer et inscrire les joueurs" }}
+            {{
+              isLoadingAdd
+                ? "Création en cours..."
+                : "Créer et inscrire les joueurs"
+            }}
           </button>
         </form>
       </div>
@@ -72,9 +86,17 @@
         <form @submit.prevent="handleUpdate">
           <div class="form-group">
             <label for="select-tournament">Choisir un tournoi :</label>
-            <select id="select-tournament" v-model="selectedTournamentId" @change="fetchTournamentDetails">
+            <select
+              id="select-tournament"
+              v-model="selectedTournamentId"
+              @change="fetchTournamentDetails"
+            >
               <option value="">-- Sélectionner un tournoi --</option>
-              <option v-for="tournament in tournaments" :key="tournament._id" :value="tournament._id">
+              <option
+                v-for="tournament in tournaments"
+                :key="tournament._id"
+                :value="tournament._id"
+              >
                 {{ tournament.name }} ({{ tournament.gameId?.name }})
               </option>
             </select>
@@ -83,12 +105,20 @@
           <div v-if="selectedTournament">
             <div class="form-group">
               <label for="update-name">Nouveau nom :</label>
-              <input id="update-name" v-model="updatedName" placeholder="Nom du tournoi" />
+              <input
+                id="update-name"
+                v-model="updatedName"
+                placeholder="Nom du tournoi"
+              />
             </div>
 
             <div class="form-group">
               <label for="update-game">Nouveau jeu :</label>
-              <select id="update-game" v-model="updatedGameId" @change="fetchAvailablePlayersForUpdate">
+              <select
+                id="update-game"
+                v-model="updatedGameId"
+                @change="fetchAvailablePlayersForUpdate"
+              >
                 <option v-for="game in games" :key="game._id" :value="game._id">
                   {{ game.name }}
                 </option>
@@ -134,7 +164,11 @@
               </div>
             </div>
 
-            <button type="submit" class="submit-button" :disabled="isLoadingUpdate">
+            <button
+              type="submit"
+              class="submit-button"
+              :disabled="isLoadingUpdate"
+            >
               {{ isLoadingUpdate ? "Modification en cours..." : "Modifier" }}
             </button>
           </div>
@@ -143,7 +177,11 @@
     </div>
 
     <!-- Notification -->
-    <div v-if="message" class="notification" :class="{ success: isSuccess, error: !isSuccess }">
+    <div
+      v-if="message"
+      class="notification"
+      :class="{ success: isSuccess, error: !isSuccess }"
+    >
       {{ message }}
     </div>
   </div>
@@ -151,7 +189,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import axios from "axios";
+import { gameService } from "@/services/gameService";
+import { tournamentService } from "@/services/tournamentService";
+import { playerService } from "@/services/playerService";
 
 // Données du formulaire d'ajout
 const addName = ref("");
@@ -180,11 +220,11 @@ const isSuccess = ref(false);
 // Charger les jeux et tournois disponibles
 onMounted(async () => {
   try {
-    const gamesRes = await axios.get("http://localhost:5000/api/games/all");
-    games.value = gamesRes.data;
-
-    const tournamentsRes = await axios.get("http://localhost:5000/api/tournaments/all");
-    tournaments.value = tournamentsRes.data.filter((tournament) => !tournament.isFinished);
+    games.value = await gameService.fetchGames();
+    const tournamentsRes = await tournamentService.fetchTournaments();
+    tournaments.value = tournamentsRes.filter(
+      (tournament) => !tournament.isFinished
+    );
   } catch (error) {
     showMessage("Erreur lors du chargement des données.", false);
   }
@@ -215,8 +255,9 @@ async function fetchAvailablePlayersForAdd() {
     return;
   }
   try {
-    const playersRes = await axios.get(`http://localhost:5000/api/players/by-game/${addGameId.value}`);
-    availablePlayersForAdd.value = playersRes.data;
+    availablePlayersForAdd.value = await playerService.fetchPlayersByGame(
+      addGameId.value
+    );
   } catch (error) {
     showMessage("Erreur lors du chargement des joueurs.", false);
   }
@@ -229,11 +270,14 @@ async function fetchAvailablePlayersForUpdate() {
     return;
   }
   try {
-    const playersRes = await axios.get(`http://localhost:5000/api/players/by-game/${updatedGameId.value}`);
-    availablePlayersForUpdate.value = playersRes.data;
+    availablePlayersForUpdate.value = await playerService.fetchPlayersByGame(
+      updatedGameId.value
+    );
     // Garder cochés ceux déjà inscrits dans le tournoi
     updatedPlayers.value = updatedPlayers.value.filter((playerId) =>
-      availablePlayersForUpdate.value.some((player) => player._id.toString() === playerId)
+      availablePlayersForUpdate.value.some(
+        (player) => player._id.toString() === playerId
+      )
     );
   } catch (error) {
     showMessage("Erreur lors du chargement des joueurs.", false);
@@ -243,7 +287,9 @@ async function fetchAvailablePlayersForUpdate() {
 // Tout sélectionner/désélectionner pour l'ajout
 function toggleSelectAllAdd() {
   if (selectAllAdd.value) {
-    selectedPlayers.value = availablePlayersForAdd.value.map((player) => player._id.toString());
+    selectedPlayers.value = availablePlayersForAdd.value.map((player) =>
+      player._id.toString()
+    );
   } else {
     selectedPlayers.value = [];
   }
@@ -252,7 +298,9 @@ function toggleSelectAllAdd() {
 // Tout sélectionner/désélectionner pour la modification
 function toggleSelectAllUpdate() {
   if (selectAllUpdate.value) {
-    updatedPlayers.value = availablePlayersForUpdate.value.map((player) => player._id.toString());
+    updatedPlayers.value = availablePlayersForUpdate.value.map((player) =>
+      player._id.toString()
+    );
   } else {
     updatedPlayers.value = [];
   }
@@ -260,14 +308,18 @@ function toggleSelectAllUpdate() {
 
 // Ajouter un tournoi
 async function handleAdd() {
-  if (!addName.value || !addGameId.value || selectedPlayers.value.length === 0) {
+  if (
+    !addName.value ||
+    !addGameId.value ||
+    selectedPlayers.value.length === 0
+  ) {
     showMessage("Veuillez remplir tous les champs obligatoires.", false);
     return;
   }
 
   isLoadingAdd.value = true;
   try {
-    await axios.post("http://localhost:5000/api/tournaments/add", {
+    await tournamentService.addTournament({
       name: addName.value,
       gameId: addGameId.value,
       playerIds: selectedPlayers.value,
@@ -296,15 +348,21 @@ async function fetchTournamentDetails() {
     return;
   }
   try {
-    const res = await axios.get(`http://localhost:5000/api/tournaments/${selectedTournamentId.value}`);
-    selectedTournament.value = res.data;
-    updatedName.value = res.data.name;
-    updatedGameId.value = res.data.gameId?._id || "";
+    const res = await tournamentService.fetchTournamentDetails(
+      selectedTournamentId.value
+    );
+    selectedTournament.value = res;
+    updatedName.value = res.name;
+    updatedGameId.value = res.gameId?._id || "";
     // Récupérer les joueurs déjà inscrits dans le tournoi
-    updatedPlayers.value = res.data.players?.map((player) => player._id.toString()) || [];
+    updatedPlayers.value =
+      res.players?.map((player) => player._id.toString()) || [];
     await fetchAvailablePlayersForUpdate();
   } catch (error) {
-    console.error("Erreur lors de la récupération des détails du tournoi :", error);
+    console.error(
+      "Erreur lors de la récupération des détails du tournoi :",
+      error
+    );
     showMessage("Erreur lors du chargement du tournoi.", false);
   }
 }
@@ -314,7 +372,7 @@ async function handleUpdate() {
   if (!selectedTournamentId.value) return;
   isLoadingUpdate.value = true;
   try {
-    await axios.put(`http://localhost:5000/api/tournaments/update/${selectedTournamentId.value}`, {
+    await tournamentService.updateTournament(selectedTournamentId.value, {
       name: updatedName.value,
       gameId: updatedGameId.value,
       playerIds: updatedPlayers.value,
@@ -338,8 +396,10 @@ async function handleUpdate() {
 // Rafraîchir la liste des tournois
 async function fetchTournaments() {
   try {
-    const tournamentsRes = await axios.get("http://localhost:5000/api/tournaments/all");
-    tournaments.value = tournamentsRes.data.filter((tournament) => !tournament.isFinished);
+    const tournamentsRes = await tournamentService.fetchTournaments();
+    tournaments.value = tournamentsRes.filter(
+      (tournament) => !tournament.isFinished
+    );
   } catch (error) {
     showMessage("Erreur lors du chargement des tournois.", false);
   }

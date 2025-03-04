@@ -93,7 +93,11 @@
           <div v-if="selectedPlayer">
             <div class="form-group">
               <label for="update-name">Nouveau nom :</label>
-              <input id="update-name" v-model="updatedName" placeholder="Nom du joueur" />
+              <input
+                id="update-name"
+                v-model="updatedName"
+                placeholder="Nom du joueur"
+              />
             </div>
 
             <div class="form-group">
@@ -116,7 +120,11 @@
     </div>
 
     <!-- Notification -->
-    <div v-if="message" class="notification" :class="{ success: isSuccess, error: !isSuccess }">
+    <div
+      v-if="message"
+      class="notification"
+      :class="{ success: isSuccess, error: !isSuccess }"
+    >
       {{ message }}
     </div>
   </div>
@@ -124,8 +132,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { addPlayer, updatePlayer, searchPlayersByName, fetchPlayersByGame as fetchPlayersByGameAPI } from "@/services/playerService";
-import gameService from "@/services/gameService";
+import { playerService } from "@/services/playerService";
+import { gameService } from "@/services/gameService";
 
 // Données du formulaire d'ajout
 const addName = ref("");
@@ -154,7 +162,10 @@ const filteredPlayers = computed(() => {
     return [];
   }
   return players.value.filter((player) => {
-    return player.gameId === selectedGameId.value || player.gameId?._id === selectedGameId.value;
+    return (
+      player.gameId === selectedGameId.value ||
+      player.gameId?._id === selectedGameId.value
+    );
   });
 });
 
@@ -174,12 +185,12 @@ const searchPlayers = async () => {
     return;
   }
   try {
-    const response = await searchPlayersByName(addName.value);
+    const response = await playerService.searchPlayersByName(addName.value);
     suggestions.value = response;
   } catch (error) {
     console.error("Erreur lors de la recherche des joueurs :", error);
     // Vous pouvez décommenter la ligne suivante pour afficher une notification en cas d'erreur
-    // showMessage("Erreur lors de la recherche des joueurs.", false);
+    // showMessage('Erreur lors de la recherche des joueurs.', false);
   }
 };
 
@@ -194,11 +205,12 @@ async function fetchPlayersByGame(gameId) {
     return;
   }
   try {
-    const response = await fetchPlayersByGameAPI(gameId);
+    const response = await playerService.fetchPlayersByGame(gameId);
     players.value = response;
   } catch (error) {
     console.error("Erreur lors de la récupération des joueurs :", error);
-    const errorMsg = error.response?.data?.message || "Erreur lors du chargement des joueurs.";
+    const errorMsg =
+      error.response?.data?.message || "Erreur lors du chargement des joueurs.";
     showMessage(errorMsg, false);
   }
 }
@@ -209,7 +221,9 @@ async function fetchPlayerDetails() {
     selectedPlayer.value = null;
     return;
   }
-  selectedPlayer.value = players.value.find(player => player._id === selectedPlayerId.value);
+  selectedPlayer.value = players.value.find(
+    (player) => player._id === selectedPlayerId.value
+  );
   if (!selectedPlayer.value) {
     console.warn(`Aucun joueur trouvé avec l'ID: ${selectedPlayerId.value}`);
   } else {
@@ -226,7 +240,7 @@ async function handleAdd() {
   }
   isLoading.value = true;
   try {
-    await addPlayer({
+    await playerService.addPlayer({
       name: addName.value,
       tier: Number(addTier.value),
       gameId: addGameId.value,
@@ -242,7 +256,8 @@ async function handleAdd() {
     }
   } catch (error) {
     console.error(error);
-    const errorMsg = error.response?.data?.message || "Erreur lors de l'ajout du joueur.";
+    const errorMsg =
+      error.response?.data?.message || "Erreur lors de l'ajout du joueur.";
     showMessage(errorMsg, false);
   } finally {
     isLoading.value = false;
@@ -254,13 +269,15 @@ async function handleUpdate() {
   if (!selectedPlayerId.value) return;
   isLoading.value = true;
   try {
-    await updatePlayer(selectedPlayerId.value, {
+    await playerService.updatePlayer(selectedPlayerId.value, {
       name: updatedName.value,
       tier: updatedTier.value,
     });
     showMessage("Joueur modifié avec succès !", true);
     // Mettre à jour la liste locale des joueurs
-    const playerIndex = players.value.findIndex(player => player._id === selectedPlayerId.value);
+    const playerIndex = players.value.findIndex(
+      (player) => player._id === selectedPlayerId.value
+    );
     if (playerIndex !== -1) {
       players.value[playerIndex].name = updatedName.value;
       players.value[playerIndex].tier = updatedTier.value;
@@ -274,7 +291,9 @@ async function handleUpdate() {
     updatedTier.value = null;
   } catch (error) {
     console.error(error);
-    const errorMsg = error.response?.data?.message || "Erreur lors de la modification du joueur.";
+    const errorMsg =
+      error.response?.data?.message ||
+      "Erreur lors de la modification du joueur.";
     showMessage(errorMsg, false);
   } finally {
     isLoading.value = false;
